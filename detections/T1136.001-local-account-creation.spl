@@ -1,0 +1,38 @@
+| Title: Local Account Creation Detection
+| MITRE ATT&CK: T1136.001 - Create Account: Local Account
+| Data Source: Windows Security Event Log
+| Author: Chalitha
+| Description: Detects creation of new local user accounts which may indicate
+|              an adversary attempting to establish persistence.
+| Severity: High
+| False Positives: IT admin creating service accounts, automated provisioning
+| Tuning: Whitelist known admin accounts, alert only on non-IT systems
+
+| --- Detection 1: Basic Account Creation Alert ---
+
+index="mydfir-detect" sourcetype="WinEventLog:Security" EventCode=4720
+| table _time, ComputerName, TargetUserName, SubjectUserName, SubjectDomainName
+| sort -_time
+
+
+| --- Detection 2: Account Created and Added to Privileged Group ---
+
+index="mydfir-detect" sourcetype="WinEventLog:Security" (EventCode=4720 OR EventCode=4732)
+| transaction TargetUserName maxspan=5m
+| where eventcount > 1
+| table _time, ComputerName, TargetUserName, SubjectUserName
+
+
+| --- Detection 3: Account Creation via Command Line (Sysmon) ---
+
+index="mydfir-detect" sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1
+| search CommandLine="*net user*" OR CommandLine="*net localgroup*" OR CommandLine="*New-LocalUser*"
+| table _time, ComputerName, User, ParentImage, Image, CommandLine
+| sort -_time
+
+
+| --- Investigation Pivot: What did this new account do? ---
+
+index="mydfir-detect" sourcetype="WinEventLog:Security" EventCode=4624 TargetUserName="NewLocalUser"
+| table _time, ComputerName, TargetUserName, LogonType, IpAddress
+| sort -_time

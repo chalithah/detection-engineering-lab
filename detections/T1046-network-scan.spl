@@ -1,0 +1,24 @@
+| Title: Network Port Scan Detection
+| MITRE ATT&CK: T1046 - Network Service Discovery
+| Data Source: pfSense Firewall Logs
+| Author: Chalitha
+| Description: Detects high-volume connection attempts from a single source IP,
+|              indicative of port scanning or network reconnaissance activity.
+| Severity: Medium
+| False Positives: Legitimate vulnerability scanners, network monitoring tools
+| Tuning: Whitelist known scanner IPs, adjust threshold based on environment
+
+index="mydfir-detect" sourcetype="pfsense" action="block"
+| stats count as connection_attempts by src_ip, dest_ip
+| where connection_attempts > 100
+| sort -connection_attempts
+| table src_ip, dest_ip, connection_attempts
+
+
+| --- Alternative: Time-based detection for scan bursts ---
+
+index="mydfir-detect" sourcetype="pfsense" action="block"
+| bin _time span=5m
+| stats count as attempts dc(dest_port) as unique_ports by _time, src_ip
+| where attempts > 50 AND unique_ports > 20
+| table _time, src_ip, attempts, unique_ports

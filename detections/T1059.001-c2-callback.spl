@@ -1,0 +1,41 @@
+| Title: Command and Control Callback Detection
+| MITRE ATT&CK: T1059.001 - Command and Scripting Interpreter: PowerShell
+| Data Source: Suricata IDS (eve.json)
+| Author: Chalitha
+| Description: Detects potential C2 communication by identifying suspicious
+|              outbound HTTP connections to non-standard ports.
+| Severity: High
+| False Positives: Custom web applications, developer tools on non-standard ports
+| Tuning: Whitelist known application servers, add domain reputation checks
+
+| --- Detection 1: Suricata IDS Alerts ---
+
+index="mydfir-detect" sourcetype="suricata" event_type="alert"
+| table _time, src_ip, dest_ip, dest_port, alert.signature, alert.category
+| sort -_time
+
+
+| --- Detection 2: Suspicious Outbound HTTP on Non-Standard Ports ---
+
+index="mydfir-detect" sourcetype="suricata" event_type="http" 
+| where NOT (dest_port=80 OR dest_port=443)
+| stats count by src_ip, dest_ip, dest_port, http.hostname
+| where count > 5
+| table src_ip, dest_ip, dest_port, http.hostname, count
+
+
+| --- Detection 3: Meterpreter-style Beaconing Pattern ---
+
+index="mydfir-detect" sourcetype="suricata" dest_port=4444 OR dest_port=8000 OR dest_port=8080
+| stats count as connections by src_ip, dest_ip, dest_port
+| where connections > 3
+| table src_ip, dest_ip, dest_port, connections
+
+
+| --- Investigation Pivot: Correlate with Sysmon Process Creation ---
+
+index="mydfir-detect" sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1
+| search ParentImage="*explorer.exe" Image="*.exe"
+| where NOT match(Image, "(?i)(chrome|firefox|edge|outlook|teams)")
+| table _time, ComputerName, User, ParentImage, Image, CommandLine
+| sort -_time
