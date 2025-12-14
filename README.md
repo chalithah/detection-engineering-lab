@@ -15,7 +15,7 @@ This project simulates a realistic corporate environment to emulate adversary tr
 The lab features a private LAN (`192.168.1.0/24`) segmented from the internet by a firewall. All endpoint and network activity is forwarded to a central Splunk indexer for analysis.
 
 <p align="center">
-  <img src="https://github.com/chalithah/soc-detection-lab/blob/main/images/0-network-diagram.png" width="800">
+  <img src="https://github.com/chalithah/soc-detection-lab/blob/main/images/0-network-diagram.png">
   <br>
   <em><b>Fig 1:</b> Logical network architecture showing LAN segmentation (192.168.1.0/24) with pfSense firewall, Splunk SIEM, and attack/target endpoints.</em>
 </p>
